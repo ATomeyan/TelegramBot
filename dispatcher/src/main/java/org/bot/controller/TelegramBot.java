@@ -1,28 +1,39 @@
 package org.bot.controller;
 
-import org.apache.log4j.Logger;
+import lombok.extern.log4j.Log4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+
+import javax.annotation.PostConstruct;
 
 /**
  * @author Artur Tomeyan
  * @date 20/10/2022
  */
 @Component
-
+@Log4j
 public class TelegramBot extends TelegramLongPollingBot {
 
-    private static final Logger logger = Logger.getLogger(TelegramBot.class);
     @Value("${bot.name}")
     private String botName;
 
     @Value("${bot.token}")
     private String botToken;
+
+    private final UpdateController updateController;
+
+    public TelegramBot(UpdateController updateController) {
+        this.updateController = updateController;
+    }
+
+    @PostConstruct
+    public void init() {
+        updateController.registerBot(this);
+    }
 
     @Override
     public String getBotUsername() {
@@ -36,21 +47,15 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        Message message = update.getMessage();
-        logger.debug(message.getText());
-
-        SendMessage response = new SendMessage();
-        response.setChatId(message.getChatId().toString());
-        response.setText("Hello from BOT");
-        sendAnswerMessage(response);
+        updateController.processUpdate(update);
     }
 
-    private void sendAnswerMessage(SendMessage sendMessage){
-        if (sendMessage != null){
+    public void sendAnswerMessage(SendMessage sendMessage) {
+        if (sendMessage != null) {
             try {
                 execute(sendMessage);
-            } catch (TelegramApiException e){
-                logger.error(e);
+            } catch (TelegramApiException e) {
+                log.error(e);
             }
         }
     }
