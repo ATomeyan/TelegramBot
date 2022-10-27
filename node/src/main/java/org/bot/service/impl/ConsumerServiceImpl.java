@@ -2,6 +2,7 @@ package org.bot.service.impl;
 
 import lombok.extern.log4j.Log4j;
 import org.bot.service.ConsumerService;
+import org.bot.service.MainService;
 import org.bot.service.ProducerService;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
@@ -19,10 +20,10 @@ import static org.bot.model.RabbitQueue.*;
 @Log4j
 public class ConsumerServiceImpl implements ConsumerService {
 
-    private final ProducerService producerService;
+    private final MainService mainService;
 
-    public ConsumerServiceImpl(ProducerService producerService) {
-        this.producerService = producerService;
+    public ConsumerServiceImpl(MainService mainService) {
+        this.mainService = mainService;
     }
 
     @Override
@@ -30,12 +31,7 @@ public class ConsumerServiceImpl implements ConsumerService {
     public void consumeTextMessageUpdates(Update update) {
         log.debug("Node: text message");
 
-        Message message = update.getMessage();
-        SendMessage sendMessage = new SendMessage();
-
-        sendMessage.setChatId(message.getChatId().toString());
-        sendMessage.setText("Hello from node");
-        producerService.produceAnswer(sendMessage);
+        mainService.processTextMessage(update);
     }
 
     @Override
